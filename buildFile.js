@@ -124,7 +124,7 @@ var buildSeajsFile = function(fileOpt, globalOpt, callback){
 					if(!globalOpt.dep.isRequried(depResolvedId)){
 						globalOpt.dep.addRequrie(depResolvedId);
 						//带有{}的路径,里面填充的是seajs.config.vars,这是运行时依赖.不通过这个来解析路径, 保留即可
-						if(!/\{[^/]+}/.test(depFilePath) && !((globalOpt.param.except) && (globalOpt.param.except.indexOf(depId) >= 0))){
+						if(!/\{[^/]+}/.test(depFilePath) && !((globalOpt.param.except) && (globalOpt.param.except.indexOf(depId) >= 0)) && !/plugins\//.test(depFilePath)){
 							//递归处理: 读code 取依赖, 检测, 构建模块
 							//排除列表
 							buildSeajsFile({
