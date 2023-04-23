@@ -24,22 +24,53 @@ var DEP = function(){
 	};
 };
 
+// 缓存一个对象
+var Cache = function(){
+	var cache = {};
+	return function(key, value){
+		if(value){
+			cache[key] = value;
+		}
+		return cache[key];
+	};
+}
+
+var cache = new Cache();
+
 var buildSeajsFile = function(fileOpt, globalOpt, callback){
 	async.waterfall([
 		//读取代码
 		function(callback){
-			fs.readFile(fileOpt.src, {encoding: 'utf-8'}, function(err, code){
-				if(!err){
-					callback(false, fileOpt, globalOpt, code);
-				}
-				else{
-					callback(err, null);
-				}
-			});
+			// var now = new Date().getTime();
+			var code = cache(fileOpt.src);
+			if(code){
+				// console.log("读取文件耗时[cache]：" + (new Date().getTime() - now) + "ms ｜" + fileOpt.src);
+				callback(false, fileOpt, globalOpt, code);
+			} else{
+				fs.readFile(fileOpt.src, {encoding: 'utf-8'}, function(err, code){
+					// console.log("读取文件耗时：" + (new Date().getTime() - now) + "ms ｜" + fileOpt.src);
+					if(!err){
+						cache(fileOpt.src, code)
+						callback(false, fileOpt, globalOpt, code);
+					}
+					else{
+						callback(err, null);
+					}
+				});
+			}
 		},
 		//分析代码依赖
 		function(fileOpt, globalOpt, code, callback){
-			var parsedCode = parseCode(code);
+			// var now = new Date().getTime();
+			var cached = cache("pc_" + fileOpt.src);
+			var parsedCode;
+			if (cached) {
+				parsedCode = cached;
+                // console.log("分析文件耗时[cache]：" + (new Date().getTime() - now) + "ms ｜" + fileOpt.src);
+            } else {
+                parsedCode = parseCode(code);
+                cache("pc_" + fileOpt.src, parsedCode);
+			}
 			async.each(parsedCode.define, function(d, callback){
 				//如果传入了ID，则覆盖匿名
 				if(d.key.get() === '' && fileOpt.id){
